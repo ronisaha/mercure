@@ -16,7 +16,7 @@ import (
 func TestNoAuthorizationHeader(t *testing.T) {
 	hub := createDummy()
 
-	req := httptest.NewRequest("POST", "http://example.com/hub", nil)
+	req := httptest.NewRequest("POST", "http://example.com"+defaultHubURL, nil)
 	w := httptest.NewRecorder()
 	hub.PublishHandler(w, req)
 
@@ -29,7 +29,7 @@ func TestNoAuthorizationHeader(t *testing.T) {
 func TestPublishUnauthorizedJWT(t *testing.T) {
 	hub := createDummy()
 
-	req := httptest.NewRequest("POST", "http://example.com/hub", nil)
+	req := httptest.NewRequest("POST", "http://example.com"+defaultHubURL, nil)
 	req.Header.Add("Authorization", "Bearer "+createDummyUnauthorizedJWT())
 	w := httptest.NewRecorder()
 	hub.PublishHandler(w, req)
@@ -43,7 +43,7 @@ func TestPublishUnauthorizedJWT(t *testing.T) {
 func TestPublishInvalidAlgJWT(t *testing.T) {
 	hub := createDummy()
 
-	req := httptest.NewRequest("POST", "http://example.com/hub", nil)
+	req := httptest.NewRequest("POST", "http://example.com"+defaultHubURL, nil)
 	req.Header.Add("Authorization", "Bearer "+createDummyNoneSignedJWT())
 	w := httptest.NewRecorder()
 	hub.PublishHandler(w, req)
@@ -57,7 +57,7 @@ func TestPublishInvalidAlgJWT(t *testing.T) {
 func TestPublishBadContentType(t *testing.T) {
 	hub := createDummy()
 
-	req := httptest.NewRequest("POST", "http://example.com/hub", nil)
+	req := httptest.NewRequest("POST", "http://example.com"+defaultHubURL, nil)
 	req.Header.Add("Authorization", "Bearer "+createDummyAuthorizedJWT(hub, true, []string{}))
 	req.Header.Add("Content-Type", "text/plain; boundary=")
 	w := httptest.NewRecorder()
@@ -71,7 +71,7 @@ func TestPublishBadContentType(t *testing.T) {
 func TestPublishNoTopic(t *testing.T) {
 	hub := createDummy()
 
-	req := httptest.NewRequest("POST", "http://example.com/hub", nil)
+	req := httptest.NewRequest("POST", "http://example.com"+defaultHubURL, nil)
 	req.Header.Add("Authorization", "Bearer "+createDummyAuthorizedJWT(hub, true, []string{}))
 	w := httptest.NewRecorder()
 	hub.PublishHandler(w, req)
@@ -88,7 +88,7 @@ func TestPublishNoData(t *testing.T) {
 	form := url.Values{}
 	form.Add("topic", "http://example.com/books/1")
 
-	req := httptest.NewRequest("POST", "http://example.com/hub", strings.NewReader(form.Encode()))
+	req := httptest.NewRequest("POST", "http://example.com"+defaultHubURL, strings.NewReader(form.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Authorization", "Bearer "+createDummyAuthorizedJWT(hub, true, []string{}))
 
@@ -109,7 +109,7 @@ func TestPublishInvalidRetry(t *testing.T) {
 	form.Add("data", "foo")
 	form.Add("retry", "invalid")
 
-	req := httptest.NewRequest("POST", "http://example.com/hub", strings.NewReader(form.Encode()))
+	req := httptest.NewRequest("POST", "http://example.com"+defaultHubURL, strings.NewReader(form.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Authorization", "Bearer "+createDummyAuthorizedJWT(hub, true, []string{}))
 
@@ -130,7 +130,7 @@ func TestPublishNotAuthorizedTarget(t *testing.T) {
 	form.Add("data", "foo")
 	form.Add("target", "not-allowed")
 
-	req := httptest.NewRequest("POST", "http://example.com/hub", strings.NewReader(form.Encode()))
+	req := httptest.NewRequest("POST", "http://example.com"+defaultHubURL, strings.NewReader(form.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Authorization", "Bearer "+createDummyAuthorizedJWT(hub, true, []string{"foo"}))
 
@@ -169,7 +169,7 @@ func TestPublishOK(t *testing.T) {
 	form.Add("target", "foo")
 	form.Add("target", "bar")
 
-	req := httptest.NewRequest("POST", "http://example.com/hub", strings.NewReader(form.Encode()))
+	req := httptest.NewRequest("POST", "http://example.com"+defaultHubURL, strings.NewReader(form.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Authorization", "Bearer "+createDummyAuthorizedJWT(hub, true, []string{"foo", "bar"}))
 
@@ -206,7 +206,7 @@ func TestPublishGenerateUUID(t *testing.T) {
 	form.Add("topic", "http://example.com/books/1")
 	form.Add("data", "Hello!")
 
-	req := httptest.NewRequest("POST", "http://example.com/hub", strings.NewReader(form.Encode()))
+	req := httptest.NewRequest("POST", "http://example.com"+defaultHubURL, strings.NewReader(form.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.AddCookie(&http.Cookie{Name: "mercureAuthorization", Value: createDummyAuthorizedJWT(hub, true, []string{})})
 	req.Header.Add("Authorization", "Bearer "+createDummyAuthorizedJWT(hub, true, []string{}))

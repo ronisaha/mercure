@@ -31,7 +31,7 @@ func (m *responseWriterMock) WriteHeader(statusCode int) {
 func TestSubscribeNotAFlusher(t *testing.T) {
 	hub := createDummy()
 
-	req := httptest.NewRequest("GET", "http://example.com/hub", nil)
+	req := httptest.NewRequest("GET", "http://example.com"+defaultHubURL, nil)
 
 	assert.PanicsWithValue(t, "The Response Writer must be an instance of Flusher.", func() {
 		hub.SubscribeHandler(&responseWriterMock{}, req)
@@ -41,7 +41,7 @@ func TestSubscribeNotAFlusher(t *testing.T) {
 func TestSubscribeNoCookie(t *testing.T) {
 	hub := createDummy()
 
-	req := httptest.NewRequest("GET", "http://example.com/hub", nil)
+	req := httptest.NewRequest("GET", "http://example.com"+defaultHubURL, nil)
 	w := httptest.NewRecorder()
 
 	hub.SubscribeHandler(w, req)
@@ -55,7 +55,7 @@ func TestSubscribeNoCookie(t *testing.T) {
 func TestSubscribeInvalidJWT(t *testing.T) {
 	hub := createDummy()
 
-	req := httptest.NewRequest("GET", "http://example.com/hub", nil)
+	req := httptest.NewRequest("GET", "http://example.com"+defaultHubURL, nil)
 	w := httptest.NewRecorder()
 	req.AddCookie(&http.Cookie{Name: "mercureAuthorization", Value: "invalid"})
 
@@ -70,7 +70,7 @@ func TestSubscribeInvalidJWT(t *testing.T) {
 func TestSubscribeUnauthorizedJWT(t *testing.T) {
 	hub := createDummy()
 
-	req := httptest.NewRequest("GET", "http://example.com/hub", nil)
+	req := httptest.NewRequest("GET", "http://example.com"+defaultHubURL, nil)
 	w := httptest.NewRecorder()
 	req.AddCookie(&http.Cookie{Name: "mercureAuthorization", Value: createDummyUnauthorizedJWT()})
 	req.Header = http.Header{"Cookie": w.HeaderMap["Set-Cookie"]}
@@ -86,7 +86,7 @@ func TestSubscribeUnauthorizedJWT(t *testing.T) {
 func TestSubscribeInvalidAlgJWT(t *testing.T) {
 	hub := createDummy()
 
-	req := httptest.NewRequest("GET", "http://example.com/hub", nil)
+	req := httptest.NewRequest("GET", "http://example.com"+defaultHubURL, nil)
 	w := httptest.NewRecorder()
 	req.AddCookie(&http.Cookie{Name: "mercureAuthorization", Value: createDummyNoneSignedJWT()})
 
@@ -101,7 +101,7 @@ func TestSubscribeInvalidAlgJWT(t *testing.T) {
 func TestSubscribeNoTopic(t *testing.T) {
 	hub := createAnonymousDummy()
 
-	req := httptest.NewRequest("GET", "http://example.com/hub", nil)
+	req := httptest.NewRequest("GET", "http://example.com"+defaultHubURL, nil)
 	w := httptest.NewRecorder()
 	hub.SubscribeHandler(w, req)
 
@@ -139,7 +139,7 @@ func testSubscribe(numberOfSubscribers int, t *testing.T) {
 				Event:  Event{Data: "Great", ID: "c"},
 			})
 			hub.updates <- newSerializedUpdate(&Update{
-				Topics: []string{"http://example.com/hub?topic=faulty{iri"},
+				Topics: []string{"http://example.com/.well-known/mercure?topic=faulty{iri"},
 				Event:  Event{Data: "Faulty IRI", ID: "d"},
 			})
 			hub.updates <- newSerializedUpdate(&Update{
@@ -157,7 +157,7 @@ func testSubscribe(numberOfSubscribers int, t *testing.T) {
 	for i := 0; i < numberOfSubscribers; i++ {
 		go func(w2 *sync.WaitGroup) {
 			defer w2.Done()
-			req := httptest.NewRequest("GET", "http://example.com/hub?topic=http://example.com/books/1&topic=string&topic=http://example.com/reviews/{id}&topic=http://example.com/hub?topic=faulty{iri", nil)
+			req := httptest.NewRequest("GET", "http://example.com/.well-known/mercure?topic=http://example.com/books/1&topic=string&topic=http://example.com/reviews/{id}&topic=http://example.com/.well-known/mercure?topic=faulty{iri", nil)
 			w := httptest.NewRecorder()
 			hub.SubscribeHandler(w, req)
 
@@ -187,7 +187,7 @@ func TestUnsubscribe(t *testing.T) {
 	wg.Add(1)
 	go func(w *sync.WaitGroup) {
 		defer w.Done()
-		req := httptest.NewRequest("GET", "http://example.com/hub?topic=http://example.com/books/1", nil).WithContext(ctx)
+		req := httptest.NewRequest("GET", "http://example.com/.well-known/mercure?topic=http://example.com/books/1", nil).WithContext(ctx)
 		hub.SubscribeHandler(httptest.NewRecorder(), req)
 		assert.Equal(t, 0, len(hub.subscribers.m))
 	}(&wg)
@@ -241,7 +241,7 @@ func TestSubscribeTarget(t *testing.T) {
 		}
 	}()
 
-	req := httptest.NewRequest("GET", "http://example.com/hub?topic=http://example.com/reviews/{id}", nil)
+	req := httptest.NewRequest("GET", "http://example.com/.well-known/mercure?topic=http://example.com/reviews/{id}", nil)
 	w := httptest.NewRecorder()
 	req.AddCookie(&http.Cookie{Name: "mercureAuthorization", Value: createDummyAuthorizedJWT(hub, false, []string{"foo", "bar"})})
 
@@ -282,7 +282,7 @@ func TestSubscribeAllTargets(t *testing.T) {
 		}
 	}()
 
-	req := httptest.NewRequest("GET", "http://example.com/hub?topic=http://example.com/reviews/{id}", nil)
+	req := httptest.NewRequest("GET", "http://example.com/.well-known/mercure?topic=http://example.com/reviews/{id}", nil)
 	w := httptest.NewRecorder()
 	req.Header.Add("Authorization", "Bearer "+createDummyAuthorizedJWT(hub, false, []string{"random", "*"}))
 	hub.SubscribeHandler(w, req)
@@ -323,7 +323,7 @@ func TestSendMissedEvents(t *testing.T) {
 
 	go func() {
 		defer wg.Done()
-		req := httptest.NewRequest("GET", "http://example.com/hub?topic=http://example.com/foos/{id}&Last-Event-ID=a", nil).WithContext(ctx)
+		req := httptest.NewRequest("GET", "http://example.com/.well-known/mercure?topic=http://example.com/foos/{id}&Last-Event-ID=a", nil).WithContext(ctx)
 		w := httptest.NewRecorder()
 		hub.SubscribeHandler(w, req)
 		assert.Equal(t, ":\nid: b\ndata: d2\n\n", w.Body.String())
@@ -331,7 +331,7 @@ func TestSendMissedEvents(t *testing.T) {
 
 	go func() {
 		defer wg.Done()
-		req := httptest.NewRequest("GET", "http://example.com/hub?topic=http://example.com/foos/{id}", nil).WithContext(ctx)
+		req := httptest.NewRequest("GET", "http://example.com/.well-known/mercure?topic=http://example.com/foos/{id}", nil).WithContext(ctx)
 		req.Header.Add("Last-Event-ID", "a")
 		w := httptest.NewRecorder()
 		hub.SubscribeHandler(w, req)
@@ -378,7 +378,7 @@ func TestSubscribeHeartbeat(t *testing.T) {
 		}
 	}()
 
-	req := httptest.NewRequest("GET", "http://example.com/hub?topic=http://example.com/books/1&topic=http://example.com/reviews/{id}", nil)
+	req := httptest.NewRequest("GET", "http://example.com/.well-known/mercure?topic=http://example.com/books/1&topic=http://example.com/reviews/{id}", nil)
 	w := httptest.NewRecorder()
 	hub.SubscribeHandler(w, req)
 
